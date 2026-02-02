@@ -11,6 +11,8 @@ LABEL description="ComfyUI worker for furniture product compositing with IP-Adap
 # ============================================================================
 # INSTALL CUSTOM NODES
 # ============================================================================
+# Cache buster: increment to force rebuild of custom nodes layer
+ARG CUSTOM_NODES_VERSION=2
 
 WORKDIR /comfyui/custom_nodes
 
