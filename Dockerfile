@@ -32,6 +32,9 @@ RUN git clone --depth 1 https://github.com/pythongosssss/ComfyUI-Custom-Scripts.
 # WAS Node Suite - Additional image processing nodes
 RUN git clone --depth 1 https://github.com/WASasquatch/was-node-suite-comfyui.git
 
+# Nano Banana Pro - Google Gemini 3 Pro Image for multi-reference product placement
+RUN git clone --depth 1 https://github.com/ru4ls/ComfyUI_Nano_Banana.git
+
 # ============================================================================
 # INSTALL NODE DEPENDENCIES
 # ============================================================================
@@ -58,6 +61,10 @@ RUN cd /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
 
 # WAS Node Suite requirements
 RUN cd /comfyui/custom_nodes/was-node-suite-comfyui && \
+    pip install --no-cache-dir -r requirements.txt || true
+
+# Nano Banana Pro requirements (Google Generative AI SDK)
+RUN cd /comfyui/custom_nodes/ComfyUI_Nano_Banana && \
     pip install --no-cache-dir -r requirements.txt || true
 
 # ============================================================================

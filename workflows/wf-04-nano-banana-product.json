@@ -1,0 +1,64 @@
+{
+  "name": "WF-04: Nano Banana Pro Product Placement",
+  "description": "Place a product into a scene using Nano Banana Pro (Gemini 3 Pro Image) with multi-reference support for accurate product identity",
+  "version": "1.0.0",
+  "author": "Amoeba Works",
+  
+  "1": {
+    "inputs": {
+      "image": "product_angle_1.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Product Reference 1 (Front View)" }
+  },
+  
+  "2": {
+    "inputs": {
+      "image": "product_angle_2.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Product Reference 2 (Side View)" }
+  },
+  
+  "3": {
+    "inputs": {
+      "image": "product_angle_3.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Product Reference 3 (3/4 View)" }
+  },
+  
+  "10": {
+    "inputs": {
+      "model_name": "gemini-3-pro-image-preview",
+      "prompt": "Place this office chair in a modern Scandinavian workspace. Natural daylight streaming through large windows, light wood flooring, white walls, minimal clutter. The chair should be positioned at a desk area, realistic shadows and lighting. Professional interior photography style, 85mm lens perspective.",
+      "image_count": 1,
+      "use_search": false,
+      "image_1": ["1", 0],
+      "image_2": ["2", 0],
+      "image_3": ["3", 0],
+      "aspect_ratio": "4:3",
+      "image_size": "2K",
+      "temperature": 0.8
+    },
+    "class_type": "NanoBananaAIO",
+    "_meta": { "title": "Nano Banana Pro - Product Placement" }
+  },
+  
+  "20": {
+    "inputs": {
+      "filename_prefix": "nano_banana_product",
+      "images": ["10", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Save Result" }
+  },
+  
+  "99": {
+    "inputs": {
+      "text": "NANO BANANA PRO PRODUCT PLACEMENT WORKFLOW\n\n=== INPUTS ===\n- product_angle_1.png: Front view of product\n- product_angle_2.png: Side view of product  \n- product_angle_3.png: 3/4 angle view of product\n\n=== PARAMETERS ===\n- model_name: gemini-3-pro-image-preview\n- image_count: 1 (increase for variations)\n- use_search: false (set true to ground in web search)\n- aspect_ratio: 4:3 (options: 1:1, 16:9, 9:16, etc.)\n- image_size: 2K (options: 1K, 2K, 4K)\n- temperature: 0.8 (lower = more faithful, higher = more creative)\n\n=== PROMPT TEMPLATE ===\nPlace this [PRODUCT] in a [SCENE_TYPE]. [LIGHTING]. [ATMOSPHERE]. Professional [STYLE] photography.\n\n=== SCENE EXAMPLES ===\n- modern Scandinavian workspace\n- executive corner office with city view\n- creative studio with exposed brick\n- minimal white showroom\n- cozy home office\n\n=== REQUIRED ===\nSet GOOGLE_API_KEY environment variable in RunPod"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "Workflow Instructions" }
+  }
+}
