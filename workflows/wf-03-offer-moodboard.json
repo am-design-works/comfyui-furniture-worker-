@@ -1,0 +1,241 @@
+{
+  "_meta": {
+    "title": "WF-03: Offer Moodboard Generator",
+    "description": "Create persuasive sales visuals from 3-6 products in an offer. Generates emotional 'this is what your office could look like' imagery.",
+    "version": "1.0.0",
+    "author": "Amoeba AI Studio",
+    "category": "sales-moodboard",
+    "style_presets": {
+      "scandinavian": "warm natural light, white walls, wood accents, minimal clutter, hygge atmosphere",
+      "soft_office": "professional calm environment, muted colors, diffused lighting, organized space",
+      "creative_studio": "energetic colorful space, mixed textures, plants, artistic touches",
+      "minimal_showroom": "gallery-like, pure white, single accent color, museum lighting",
+      "executive_suite": "rich materials, dark wood, leather, warm directional light, premium feel"
+    }
+  },
+  "10": {
+    "inputs": {
+      "image": "product_1.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Product 1 (Primary/Hero)" }
+  },
+  "11": {
+    "inputs": {
+      "image": "product_2.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Product 2" }
+  },
+  "12": {
+    "inputs": {
+      "image": "product_3.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Product 3 (optional)" }
+  },
+  "13": {
+    "inputs": {
+      "image": "style_reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Style Reference Image (optional - sets mood)" }
+  },
+  "20": {
+    "inputs": {
+      "ckpt_name": "RealVisXL_V4.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "Load SDXL Checkpoint" }
+  },
+  "21": {
+    "inputs": {
+      "ipadapter_file": "ip-adapter-plus_sdxl_vit-h.safetensors"
+    },
+    "class_type": "IPAdapterModelLoader",
+    "_meta": { "title": "Load IP-Adapter" }
+  },
+  "22": {
+    "inputs": {
+      "clip_name": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
+    },
+    "class_type": "CLIPVisionLoader",
+    "_meta": { "title": "Load CLIP Vision" }
+  },
+  "30": {
+    "inputs": {
+      "images": [["10", 0], ["11", 0], ["12", 0]]
+    },
+    "class_type": "ImageBatch",
+    "_meta": { "title": "Batch Product Images for IP-Adapter" }
+  },
+  "31": {
+    "inputs": {
+      "weight": 0.65,
+      "weight_type": "ease in-out",
+      "combine_embeds": "average",
+      "start_at": 0.0,
+      "end_at": 0.85,
+      "embeds_scaling": "K+mean(V) w/ V from concat",
+      "model": ["20", 0],
+      "ipadapter": ["21", 0],
+      "image": ["30", 0],
+      "clip_vision": ["22", 0]
+    },
+    "class_type": "IPAdapterAdvanced",
+    "_meta": { "title": "IP-Adapter Multi-Product (averages product identities)" }
+  },
+  "32": {
+    "inputs": {
+      "weight": 0.4,
+      "weight_type": "style transfer",
+      "combine_embeds": "concat",
+      "start_at": 0.0,
+      "end_at": 0.6,
+      "embeds_scaling": "V only",
+      "model": ["31", 0],
+      "ipadapter": ["21", 0],
+      "image": ["13", 0],
+      "clip_vision": ["22", 0]
+    },
+    "class_type": "IPAdapterAdvanced",
+    "_meta": { "title": "IP-Adapter Style Reference (optional - sets mood)" }
+  },
+  "40": {
+    "inputs": {
+      "text": "luxurious modern office interior, scandinavian design, warm natural daylight streaming through large windows, multiple furniture pieces arranged harmoniously, soft shadows, professional interior photography, architectural digest quality, premium materials visible, 8k ultra detailed, depth of field, inviting atmosphere",
+      "clip": ["20", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Positive Prompt (EDIT for style preset)" }
+  },
+  "41": {
+    "inputs": {
+      "text": "cheap furniture, plastic, low quality, blurry, distorted, warped, cluttered mess, dark, underexposed, cartoon, illustration, anime, unrealistic, amateur photography, harsh shadows, flat lighting",
+      "clip": ["20", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Negative Prompt" }
+  },
+  "50": {
+    "inputs": {
+      "width": 1536,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": { "title": "Hero Image Size (16:10 landscape)" }
+  },
+  "60": {
+    "inputs": {
+      "seed": 42,
+      "steps": 35,
+      "cfg": 7.5,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": ["32", 0],
+      "positive": ["40", 0],
+      "negative": ["41", 0],
+      "latent_image": ["50", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "KSampler Hero Generation" }
+  },
+  "70": {
+    "inputs": {
+      "samples": ["60", 0],
+      "vae": ["20", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "VAE Decode Hero" }
+  },
+  "75": {
+    "inputs": {
+      "width": 768,
+      "height": 768,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": { "title": "Detail Crop Size (1:1 square)" }
+  },
+  "76": {
+    "inputs": {
+      "seed": 142,
+      "steps": 30,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": ["31", 0],
+      "positive": ["40", 0],
+      "negative": ["41", 0],
+      "latent_image": ["75", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "KSampler Detail Crop 1" }
+  },
+  "77": {
+    "inputs": {
+      "samples": ["76", 0],
+      "vae": ["20", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "VAE Decode Detail 1" }
+  },
+  "78": {
+    "inputs": {
+      "seed": 242,
+      "steps": 30,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": ["31", 0],
+      "positive": ["40", 0],
+      "negative": ["41", 0],
+      "latent_image": ["75", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "KSampler Detail Crop 2" }
+  },
+  "79": {
+    "inputs": {
+      "samples": ["78", 0],
+      "vae": ["20", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "VAE Decode Detail 2" }
+  },
+  "90": {
+    "inputs": {
+      "filename_prefix": "moodboard_hero",
+      "images": ["70", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Save Hero Image" }
+  },
+  "91": {
+    "inputs": {
+      "filename_prefix": "moodboard_detail_1",
+      "images": ["77", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Save Detail 1" }
+  },
+  "92": {
+    "inputs": {
+      "filename_prefix": "moodboard_detail_2",
+      "images": ["79", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Save Detail 2" }
+  },
+  "100": {
+    "inputs": {
+      "text": "STYLE PRESETS - Replace positive prompt with:\n\nSCANDINAVIAN:\n'warm scandinavian interior, natural wood furniture, white walls, soft natural daylight, hygge atmosphere, minimal clutter, plants, cozy textiles, premium materials'\n\nSOFT OFFICE:\n'professional modern office, muted neutral colors, diffused overhead lighting, organized workspace, calm atmosphere, subtle luxury, premium furniture'\n\nCREATIVE STUDIO:\n'vibrant creative workspace, mixed materials and textures, colorful accents, abundant natural light, plants and art, energetic yet organized, design studio feel'\n\nMINIMAL SHOWROOM:\n'gallery-like interior, pure white environment, single accent color, museum-quality lighting, floating furniture effect, high-end showroom'\n\nEXECUTIVE SUITE:\n'executive office interior, rich dark wood, leather accents, warm directional lighting, prestigious atmosphere, corner office, premium materials'"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "Style Preset Reference" }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "_meta": {
+    "title": "Test: SDXL Scene Generation",
+    "description": "Simple test workflow to verify SDXL is working"
+  },
+  "3": {
+    "inputs": {
+      "seed": 42,
+      "steps": 30,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": ["4", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 0]
+    },
+    "class_type": "KSampler"
+  },
+  "4": {
+    "inputs": {
+      "ckpt_name": "RealVisXL_V4.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple"
+  },
+  "5": {
+    "inputs": {
+      "width": 1344,
+      "height": 896,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage"
+  },
+  "6": {
+    "inputs": {
+      "text": "empty modern office interior, no furniture, natural daylight streaming through large floor-to-ceiling windows, scandinavian design, white walls, light oak wooden flooring, clean minimalist space, architectural photography, soft shadows, 8k ultra detailed, professional real estate photography",
+      "clip": ["4", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "7": {
+    "inputs": {
+      "text": "furniture, chairs, desks, tables, people, text, watermark, logo, low quality, blurry, distorted, cartoon, illustration, anime, dark, underexposed",
+      "clip": ["4", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "8": {
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["10", 0]
+    },
+    "class_type": "VAEDecode"
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": "scene_test",
+      "images": ["8", 0]
+    },
+    "class_type": "SaveImage"
+  },
+  "10": {
+    "inputs": {
+      "vae_name": "sdxl_vae.safetensors"
+    },
+    "class_type": "VAELoader"
+  }
+}

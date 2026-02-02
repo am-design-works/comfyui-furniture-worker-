@@ -1,0 +1,80 @@
+{
+  "_meta": {
+    "title": "WF-00: Scene Background Generator",
+    "description": "Generate empty interior scenes for the preset library. Run this to create base backgrounds for product compositing.",
+    "version": "1.0.0",
+    "author": "Amoeba AI Studio",
+    "category": "scene-generation"
+  },
+  "10": {
+    "inputs": {
+      "ckpt_name": "RealVisXL_V4.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "Load SDXL Checkpoint" }
+  },
+  "20": {
+    "inputs": {
+      "width": 2048,
+      "height": 1536,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": { "title": "Scene Size (4:3 landscape - adjust for 16:9 if needed)" }
+  },
+  "30": {
+    "inputs": {
+      "text": "empty modern office interior, no furniture, natural daylight streaming through large floor-to-ceiling windows, scandinavian design, white walls, light wooden flooring, clean minimalist space, architectural photography, high-end commercial real estate photography, soft natural shadows, 8k ultra detailed, professional interior photography",
+      "clip": ["10", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Positive Prompt (EDIT for each scene type)" }
+  },
+  "31": {
+    "inputs": {
+      "text": "furniture, chairs, desks, tables, people, text, watermark, low quality, blurry, distorted, cartoon, illustration, cluttered, messy, objects on floor, decorations, plants, artwork, busy, crowded",
+      "clip": ["10", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Negative Prompt (keep furniture OUT)" }
+  },
+  "40": {
+    "inputs": {
+      "seed": 12345,
+      "steps": 35,
+      "cfg": 7.5,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": ["10", 0],
+      "positive": ["30", 0],
+      "negative": ["31", 0],
+      "latent_image": ["20", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "KSampler" }
+  },
+  "50": {
+    "inputs": {
+      "samples": ["40", 0],
+      "vae": ["10", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "VAE Decode" }
+  },
+  "60": {
+    "inputs": {
+      "filename_prefix": "scene_modern_office",
+      "images": ["50", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Save Scene (rename prefix for each type)" }
+  },
+  "100": {
+    "inputs": {
+      "text": "SCENE PROMPTS - Copy these to the positive prompt:\n\n=== MODERN OFFICE ===\nempty modern office interior, no furniture, natural daylight streaming through large floor-to-ceiling windows, scandinavian design, white walls, light wooden flooring, clean minimalist space, architectural photography\n\n=== MEETING ROOM ===\nempty modern conference room, no furniture, glass walls, professional corporate interior, neutral colors, even diffused lighting, contemporary design, architectural real estate photography\n\n=== CREATIVE STUDIO ===\nempty creative studio space, no furniture, exposed brick walls, industrial loft, large windows, mixed materials, concrete floor, plants on windowsill, artistic atmosphere, design agency interior\n\n=== MINIMAL SHOWROOM ===\nempty white gallery space, no furniture, museum-quality lighting, pure white walls and floor, subtle shadows, high-end showroom, luxury retail interior, clean architectural\n\n=== EXECUTIVE SUITE ===\nempty executive office, no furniture, dark wood paneling, warm directional lighting, city view through windows, prestigious corporate interior, corner office, premium materials\n\n=== HOME OFFICE ===\nempty home office room, no furniture, residential interior, warm natural light, white walls, wooden flooring, cozy atmosphere, work from home space, scandinavian home\n\n=== LOUNGE CORNER ===\nempty office lounge area, no furniture, relaxed atmosphere, soft lighting, modern breakout space, comfortable informal interior, collaborative workspace area"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "Scene Type Prompts Reference" }
+  }
+}

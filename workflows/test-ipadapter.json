@@ -1,0 +1,101 @@
+{
+  "_meta": {
+    "title": "Test: IP-Adapter Verification",
+    "description": "Test workflow to verify IP-Adapter nodes are working"
+  },
+  "1": {
+    "inputs": {
+      "ipadapter_file": "ip-adapter-plus_sdxl_vit-h.safetensors"
+    },
+    "class_type": "IPAdapterModelLoader",
+    "_meta": { "title": "Load IP-Adapter" }
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
+    },
+    "class_type": "CLIPVisionLoader",
+    "_meta": { "title": "Load CLIP Vision" }
+  },
+  "3": {
+    "inputs": {
+      "ckpt_name": "RealVisXL_V4.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "Load Checkpoint" }
+  },
+  "4": {
+    "inputs": {
+      "image": "product.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Load Product Image" }
+  },
+  "5": {
+    "inputs": {
+      "weight": 0.8,
+      "weight_type": "linear",
+      "combine_embeds": "concat",
+      "start_at": 0.0,
+      "end_at": 0.9,
+      "embeds_scaling": "V only",
+      "model": ["3", 0],
+      "ipadapter": ["1", 0],
+      "image": ["4", 0],
+      "clip_vision": ["2", 0]
+    },
+    "class_type": "IPAdapterAdvanced",
+    "_meta": { "title": "Apply IP-Adapter" }
+  },
+  "6": {
+    "inputs": {
+      "text": "product in modern office environment, professional photography, natural lighting",
+      "clip": ["3", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "7": {
+    "inputs": {
+      "text": "blurry, distorted, low quality",
+      "clip": ["3", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "8": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage"
+  },
+  "9": {
+    "inputs": {
+      "seed": 42,
+      "steps": 25,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": ["5", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["8", 0]
+    },
+    "class_type": "KSampler"
+  },
+  "10": {
+    "inputs": {
+      "samples": ["9", 0],
+      "vae": ["3", 2]
+    },
+    "class_type": "VAEDecode"
+  },
+  "11": {
+    "inputs": {
+      "filename_prefix": "ipadapter_test",
+      "images": ["10", 0]
+    },
+    "class_type": "SaveImage"
+  }
+}

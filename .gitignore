@@ -1,0 +1,22 @@
+# Don't commit large files
+*.safetensors
+*.ckpt
+*.pth
+*.bin
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker build artifacts
+*.log

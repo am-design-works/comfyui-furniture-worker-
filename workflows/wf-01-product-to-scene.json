@@ -1,0 +1,216 @@
+{
+  "_meta": {
+    "title": "WF-01: Product to Scene Compositing",
+    "description": "Place a single product (chair, desk, etc.) into a modern scene with believable lighting and shadows",
+    "version": "1.0.0",
+    "author": "Amoeba AI Studio",
+    "category": "furniture-compositing"
+  },
+  "10": {
+    "inputs": {
+      "image": "product.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Load Product Image (PNG with transparency)" }
+  },
+  "11": {
+    "inputs": {
+      "image": "scene_background.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Load Scene Background" }
+  },
+  "12": {
+    "inputs": {
+      "ckpt_name": "RealVisXL_V4.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "Load SDXL Checkpoint (RealVisXL)" }
+  },
+  "13": {
+    "inputs": {
+      "ipadapter_file": "ip-adapter-plus_sdxl_vit-h.safetensors"
+    },
+    "class_type": "IPAdapterModelLoader",
+    "_meta": { "title": "Load IP-Adapter Model" }
+  },
+  "14": {
+    "inputs": {
+      "clip_name": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
+    },
+    "class_type": "CLIPVisionLoader",
+    "_meta": { "title": "Load CLIP Vision (for IP-Adapter)" }
+  },
+  "15": {
+    "inputs": {
+      "control_net_name": "controlnet-depth-sdxl-1.0.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": { "title": "Load ControlNet Depth" }
+  },
+  "20": {
+    "inputs": {
+      "channel": "alpha",
+      "image": ["10", 0]
+    },
+    "class_type": "ImageToMask",
+    "_meta": { "title": "Extract Product Mask from Alpha" }
+  },
+  "21": {
+    "inputs": {
+      "expand": 8,
+      "blur": 4,
+      "mask": ["20", 0]
+    },
+    "class_type": "GrowMask",
+    "_meta": { "title": "Expand Mask (edge blending zone)" }
+  },
+  "22": {
+    "inputs": {
+      "image": ["11", 0]
+    },
+    "class_type": "MiDaS-DepthMapPreprocessor",
+    "_meta": { "title": "Generate Depth Map from Scene" }
+  },
+  "25": {
+    "inputs": {
+      "x": 512,
+      "y": 600,
+      "resize_source": true,
+      "destination": ["11", 0],
+      "source": ["10", 0],
+      "mask": ["20", 0]
+    },
+    "class_type": "ImageCompositeMasked",
+    "_meta": { "title": "Position Product in Scene (adjust x,y for placement)" }
+  },
+  "30": {
+    "inputs": {
+      "weight": 0.85,
+      "weight_type": "linear",
+      "combine_embeds": "concat",
+      "start_at": 0.0,
+      "end_at": 0.9,
+      "embeds_scaling": "V only",
+      "model": ["12", 0],
+      "ipadapter": ["13", 0],
+      "image": ["10", 0],
+      "clip_vision": ["14", 0]
+    },
+    "class_type": "IPAdapterAdvanced",
+    "_meta": { "title": "IP-Adapter (preserve product identity)" }
+  },
+  "31": {
+    "inputs": {
+      "strength": 0.55,
+      "start_percent": 0.0,
+      "end_percent": 0.85,
+      "positive": ["40", 0],
+      "negative": ["41", 0],
+      "control_net": ["15", 0],
+      "image": ["22", 0]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": { "title": "Apply ControlNet Depth (scene structure)" }
+  },
+  "40": {
+    "inputs": {
+      "text": "professional interior photography, modern office space, natural daylight, soft shadows, high-end furniture showroom, architectural digest style, 8k, sharp focus, realistic materials, premium quality",
+      "clip": ["12", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Positive Prompt (scene description)" }
+  },
+  "41": {
+    "inputs": {
+      "text": "blurry, low quality, distorted, warped, extra limbs, deformed furniture, floating objects, no shadow, flat lighting, cartoon, illustration, anime, unrealistic, cheap, plastic",
+      "clip": ["12", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Negative Prompt" }
+  },
+  "50": {
+    "inputs": {
+      "pixels": ["25", 0],
+      "vae": ["12", 2]
+    },
+    "class_type": "VAEEncode",
+    "_meta": { "title": "Encode Composite to Latent" }
+  },
+  "51": {
+    "inputs": {
+      "grow_mask_by": 12,
+      "pixels": ["25", 0],
+      "vae": ["12", 2],
+      "mask": ["21", 0]
+    },
+    "class_type": "VAEEncodeForInpaint",
+    "_meta": { "title": "Encode for Inpainting (edge zone)" }
+  },
+  "60": {
+    "inputs": {
+      "seed": 42,
+      "steps": 30,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 0.55,
+      "model": ["30", 0],
+      "positive": ["31", 0],
+      "negative": ["31", 1],
+      "latent_image": ["51", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "KSampler (Inpaint - adjust denoise 0.4-0.7)" }
+  },
+  "70": {
+    "inputs": {
+      "samples": ["60", 0],
+      "vae": ["12", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "VAE Decode" }
+  },
+  "80": {
+    "inputs": {
+      "upscale_model": "4x-UltraSharp.pth"
+    },
+    "class_type": "UpscaleModelLoader",
+    "_meta": { "title": "Load Upscaler (optional final pass)" }
+  },
+  "81": {
+    "inputs": {
+      "upscale_model": ["80", 0],
+      "image": ["70", 0]
+    },
+    "class_type": "ImageUpscaleWithModel",
+    "_meta": { "title": "Upscale Image (optional)" }
+  },
+  "82": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": 2048,
+      "height": 1536,
+      "crop": "disabled",
+      "image": ["81", 0]
+    },
+    "class_type": "ImageScale",
+    "_meta": { "title": "Resize to Final (2048x1536 or adjust)" }
+  },
+  "90": {
+    "inputs": {
+      "filename_prefix": "product_scene",
+      "images": ["70", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Save Result (standard quality)" }
+  },
+  "91": {
+    "inputs": {
+      "filename_prefix": "product_scene_hq",
+      "images": ["82", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Save Result (upscaled)" }
+  }
+}
