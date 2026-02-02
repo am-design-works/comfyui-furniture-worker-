@@ -14,6 +14,7 @@ A custom ComfyUI serverless worker for furniture product photography and composi
 
 ### Custom Nodes Included
 - `ComfyUI_IPAdapter_plus` - IP-Adapter for product compositing
+- `ComfyUI_Nano_Banana` - **Nano Banana Pro** (Gemini 3 Pro Image) for multi-reference product placement
 - `comfyui_controlnet_aux` - Depth/Canny/Line preprocessors
 - `ComfyUI_essentials` - Image transforms and masks
 - `ComfyUI-Impact-Pack` - Advanced masking/segmentation
@@ -106,9 +107,24 @@ Use these exact names in your ComfyUI workflows:
 
 See the `workflows/` folder for ready-to-use workflow JSONs:
 
-- `wf-01-product-to-scene.json` - Single product compositing
-- `wf-02-multi-product-set.json` - Multiple products in scene
-- `wf-03-offer-moodboard.json` - Sales moodboard generation
+| Workflow | Description | Technology |
+|----------|-------------|------------|
+| `wf-01-product-to-scene.json` | Single product compositing | IP-Adapter + SDXL |
+| `wf-02-multi-product-set.json` | Multiple products in scene | IP-Adapter + SDXL |
+| `wf-03-offer-moodboard.json` | Sales moodboard generation | IP-Adapter + SDXL |
+| `wf-04-nano-banana-product.json` | Multi-reference product placement | **Nano Banana Pro** |
+
+See [NANO_BANANA_GUIDE.md](./NANO_BANANA_GUIDE.md) for detailed Nano Banana Pro setup.
+
+## Environment Variables
+
+Set these in your RunPod endpoint configuration:
+
+| Variable | Required For | Description |
+|----------|--------------|-------------|
+| `GOOGLE_API_KEY` | wf-04 | Google AI API key for Nano Banana Pro |
+
+Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 ## Local Development
 
