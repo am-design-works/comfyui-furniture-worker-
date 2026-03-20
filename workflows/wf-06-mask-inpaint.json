@@ -1,0 +1,119 @@
+{
+  "name": "WF-06: Mask-based SDXL inpaint (RealVisXL Inpainting)",
+  "description": "Inpaint only masked regions using a dedicated SDXL Inpainting checkpoint and VAEEncodeForInpaint for seamless blending. White in mask = area to repaint.",
+  "version": "2.0.0",
+  "author": "Amoeba Works",
+
+  "1": {
+    "inputs": {
+      "image": "inpaint_source.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Source RGB image (same size as mask)" }
+  },
+
+  "2": {
+    "inputs": {
+      "image": "inpaint_mask.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Binary mask (white = inpaint region)" }
+  },
+
+  "3": {
+    "inputs": {
+      "channel": "red",
+      "image": ["2", 0]
+    },
+    "class_type": "ImageToMask",
+    "_meta": { "title": "Mask tensor from uploaded mask image" }
+  },
+
+  "10": {
+    "inputs": {
+      "ckpt_name": "RealVisXL_V4.0_inpainting.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "Dedicated Inpainting Checkpoint" }
+  },
+
+  "11": {
+    "inputs": {
+      "vae_name": "sdxl_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": { "title": "SDXL VAE (encode/decode)" }
+  },
+
+  "20": {
+    "inputs": {
+      "text": "seamless wood texture, natural oak grain, matte finish, photorealistic, consistent lighting, high detail, professional product photography",
+      "clip": ["10", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Positive prompt (texture / material to apply in mask)" }
+  },
+
+  "21": {
+    "inputs": {
+      "text": "blurry, low quality, distorted, seams, tiling artifacts, watermark, text, cartoon, illustration, oversaturated, muddy",
+      "clip": ["10", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Negative prompt" }
+  },
+
+  "30": {
+    "inputs": {
+      "grow_mask_by": 6,
+      "pixels": ["1", 0],
+      "vae": ["11", 0],
+      "mask": ["3", 0]
+    },
+    "class_type": "VAEEncodeForInpaint",
+    "_meta": { "title": "Encode source+mask to 9-channel inpainting latent" }
+  },
+
+  "40": {
+    "inputs": {
+      "seed": 42,
+      "steps": 30,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 0.85,
+      "model": ["10", 0],
+      "positive": ["20", 0],
+      "negative": ["21", 0],
+      "latent_image": ["30", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "KSampler (denoise: high since using inpaint model)" }
+  },
+
+  "50": {
+    "inputs": {
+      "samples": ["40", 0],
+      "vae": ["11", 0]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "Decode to image" }
+  },
+
+  "60": {
+    "inputs": {
+      "filename_prefix": "mask_inpaint",
+      "images": ["50", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Output image" }
+  },
+
+  "99": {
+    "inputs": {
+      "text": "WF-06 MASK INPAINT (RealVisXL Inpainting)\n\n=== INPUTS ===\n- inpaint_source.png: full RGB image\n- inpaint_mask.png: mask; white = repaint, black = keep (same size)\n\n=== NOTES ===\n- Uses VAEEncodeForInpaint to correctly pass the mask into the dedicated inpainting checkpoint."
+    },
+    "class_type": "Note",
+    "_meta": { "title": "Workflow notes" }
+  }
+}

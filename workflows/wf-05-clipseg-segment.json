@@ -1,0 +1,88 @@
+{
+  "name": "WF-05: CLIPSeg + SAM precise segmentation",
+  "description": "Text-guided precise mask using CLIPSeg for bounding box detection, then SAM for pixel-perfect object segmentation.",
+  "version": "2.0.0",
+  "author": "Amoeba Works",
+
+  "1": {
+    "inputs": {
+      "image": "segment_input.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Pre-cropped region (uploaded as segment_input.png)" }
+  },
+
+  "2": {
+    "inputs": {
+      "text": "product, furniture",
+      "blur": 7,
+      "threshold": 0.3,
+      "dilation_factor": 4
+    },
+    "class_type": "CLIPSegDetectorProvider",
+    "_meta": { "title": "CLIPSeg bbox detector from text prompt" }
+  },
+
+  "3": {
+    "inputs": {
+      "bbox_detector": ["2", 0],
+      "image": ["1", 0],
+      "threshold": 0.3,
+      "dilation": 4,
+      "crop_factor": 3.0,
+      "drop_size": 10
+    },
+    "class_type": "BboxDetectorSEGS",
+    "_meta": { "title": "Detect bounding boxes as SEGS" }
+  },
+
+  "4": {
+    "inputs": {
+      "model_name": "sam_vit_b_01ec64.pth",
+      "device_mode": "Prefer GPU"
+    },
+    "class_type": "SAMLoader",
+    "_meta": { "title": "Load SAM Model" }
+  },
+
+  "5": {
+    "inputs": {
+      "sam_model": ["4", 0],
+      "segs": ["3", 0],
+      "image": ["1", 0],
+      "detection_hint": "center-1",
+      "dilation": 0,
+      "threshold": 0.93,
+      "bbox_expansion": 0,
+      "mask_hint_threshold": 0.7,
+      "mask_hint_use_negative": "False"
+    },
+    "class_type": "SAMDetectorCombined",
+    "_meta": { "title": "Precise SAM Segmentation Mask" }
+  },
+
+  "6": {
+    "inputs": {
+      "mask": ["5", 0]
+    },
+    "class_type": "MaskToImage",
+    "_meta": { "title": "Mask as RGB image for SaveImage" }
+  },
+
+  "7": {
+    "inputs": {
+      "filename_prefix": "sam_segment",
+      "images": ["6", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Binary-style mask output (white ≈ object)" }
+  },
+
+  "99": {
+    "inputs": {
+      "text": "WF-05 CLIPSEG + SAM SEGMENTATION\n\n=== INPUTS ===\n- segment_input.png: pre-cropped RGB image (API passes base64 via RunPod images[])\n\n=== PARAMETERS ===\n- text (Node 2): comma-separated targets for CLIPSeg\n\n=== POST ===\n- API thresholding applies if necessary\n\n=== DEPS ===\n- ComfyUI-Impact-Pack\n- CLIPSeg extension\n- sam_vit_b_01ec64.pth downloaded to models/sams"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "Workflow notes" }
+  }
+}

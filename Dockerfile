@@ -11,8 +11,6 @@ LABEL description="ComfyUI worker for furniture product compositing with IP-Adap
 # ============================================================================
 # INSTALL CUSTOM NODES
 # ============================================================================
-# Cache buster: increment to force rebuild of custom nodes layer
-ARG CUSTOM_NODES_VERSION=2
 
 WORKDIR /comfyui/custom_nodes
 
@@ -27,6 +25,9 @@ RUN git clone --depth 1 https://github.com/cubiq/ComfyUI_essentials.git
 
 # Impact Pack - Advanced masking and segmentation
 RUN git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Impact-Pack.git
+
+# CLIPSeg - Required by Impact Pack CLIPSegDetectorProvider (registers NODE_CLASS_MAPPINGS["CLIPSeg"])
+RUN git clone --depth 1 https://github.com/sanbuphy/ComfyUI-CLIPSEG.git
 
 # Custom Scripts - Useful node additions
 RUN git clone --depth 1 https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git
@@ -61,6 +62,18 @@ RUN cd /comfyui/custom_nodes/comfyui_controlnet_aux && \
 RUN cd /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
     pip install --no-cache-dir -r requirements.txt || true
 
+# CLIPSeg (sanbuphy fork — exposes CLIPSeg node name expected by Impact Pack)
+RUN cd /comfyui/custom_nodes/ComfyUI-CLIPSEG && \
+    pip install --no-cache-dir -r requirements.txt || true
+
+# Impact Pack's BBoxDetectorBasedOnCLIPSeg unpacks 3 values from segment_image(); sanbuphy returns 2 — align for compatibility.
+RUN sed -i 's/RETURN_TYPES = ("MASK", "MASK")/RETURN_TYPES = ("MASK", "MASK", "MASK")/' \
+      /comfyui/custom_nodes/ComfyUI-CLIPSEG/clipseg_model/clipseg.py && \
+    sed -i 's/RETURN_NAMES = ("mask", "hard_mask")/RETURN_NAMES = ("mask", "hard_mask", "hard_mask_aux")/' \
+      /comfyui/custom_nodes/ComfyUI-CLIPSEG/clipseg_model/clipseg.py && \
+    sed -i 's/return (mask_dilated, hard_mask)/return (mask_dilated, hard_mask, hard_mask)/' \
+      /comfyui/custom_nodes/ComfyUI-CLIPSEG/clipseg_model/clipseg.py
+
 # WAS Node Suite requirements
 RUN cd /comfyui/custom_nodes/was-node-suite-comfyui && \
     pip install --no-cache-dir -r requirements.txt || true
@@ -77,6 +90,16 @@ RUN cd /comfyui/custom_nodes/ComfyUI_Nano_Banana && \
 RUN mkdir -p /comfyui/models/checkpoints && \
     wget -q --show-progress -O /comfyui/models/checkpoints/RealVisXL_V4.0.safetensors \
     "https://huggingface.co/SG161222/RealVisXL_V4.0/resolve/main/RealVisXL_V4.0.safetensors"
+
+# --- SDXL Inpainting Checkpoint: RealVisXL V4.0 Inpainting ---
+RUN mkdir -p /comfyui/models/checkpoints && \
+    wget -q --show-progress -O /comfyui/models/checkpoints/RealVisXL_V4.0_inpainting.safetensors \
+    "https://huggingface.co/SG161222/RealVisXL_V4.0/resolve/main/RealVisXL_V4.0_inpainting.safetensors"
+
+# --- SAM Model for precise masking ---
+RUN mkdir -p /comfyui/models/sams && \
+    wget -q --show-progress -O /comfyui/models/sams/sam_vit_b_01ec64.pth \
+    "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"
 
 # --- IP-Adapter Models ---
 RUN mkdir -p /comfyui/models/ipadapter && \
