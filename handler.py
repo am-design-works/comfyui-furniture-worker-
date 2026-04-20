@@ -197,6 +197,29 @@ def get_history(prompt_id):
     return response.json()
 
 
+def _ordered_saveimage_node_ids(workflow, outputs):
+    """
+    ComfyUI execution history often lists `images` for LoadImage/Preview nodes (input echoes).
+    API clients expect generated results only — match SaveImage nodes from the workflow JSON.
+    """
+    if not isinstance(workflow, dict) or not isinstance(outputs, dict):
+        return []
+    pairs = []
+    for nid, node in workflow.items():
+        if not isinstance(node, dict):
+            continue
+        if node.get("class_type") != "SaveImage":
+            continue
+        if nid not in outputs or "images" not in outputs[nid]:
+            continue
+        try:
+            pairs.append((int(nid), nid))
+        except (TypeError, ValueError):
+            pairs.append((0, str(nid)))
+    pairs.sort(key=lambda x: x[0])
+    return [nid for _, nid in pairs]
+
+
 def get_image_data(filename, subfolder, image_type):
     print(f"worker-comfyui - Fetching image: {filename}")
     data = {"filename": filename, "subfolder": subfolder, "type": image_type}
@@ -293,8 +316,13 @@ def handler(job):
             return {"error": f"Prompt {prompt_id} not found in history"}
 
         outputs = history.get(prompt_id, {}).get("outputs", {})
-        
-        for node_id, node_output in outputs.items():
+        save_node_ids = _ordered_saveimage_node_ids(workflow, outputs)
+        output_node_ids = save_node_ids if save_node_ids else list(outputs.keys())
+        if save_node_ids:
+            print(f"worker-comfyui - SaveImage-only output collection, node id(s): {output_node_ids}")
+
+        for node_id in output_node_ids:
+            node_output = outputs[node_id]
             if "images" in node_output:
                 for image_info in node_output["images"]:
                     filename = image_info.get("filename")
